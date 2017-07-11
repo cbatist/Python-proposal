@@ -1,0 +1,72 @@
+To install and run Strelka
+
+##### TO INSTALL STRELKA ON LINUX (UBUNTU)
+
+$ sudo apt-get update
+$ sudo apt-get upgrade
+$ sudo apt-get update -qq
+
+$ sudo apt-get install -qq bzip2 gcc g++ make python zlib1g-dev
+
+Download Strelka_workflow-1.0.15.tar.gz from
+
+https://sites.google.com/site/strelkasomaticvariantcaller/home/download
+Go to the folder and unzip yourself
+
+cd to Downloads/Strelka
+
+$ ./configure --prefix=/home/dekoterlab
+make
+
+$ /home/dekoterlab/bin/demo/run_demo.bash
+
+—————————————————————————————————————————————— 
+##### TO RUN STRELKA
+
+Strelka
+
+NEXT, WE’LL CALL MUTATIONS USING STRELKA. STRELKA PROVIDES ALIGNER SPECIFIC CONFIG FILES FOR BWA, ELAND, AND ISAAC, EACH WITH PRECONFIGURED DEFAULT PARAMETERS THAT WORK WELL WITH THE ALIGNER USED. SINCE THE BAM FILE WE’RE WORKING WITH WERE PROCESSED USING BWA, WE’LL MAKE A LOCAL COPY OF THAT FILE:
+
+$ mkdir data
+$ cp /home/dekoterlab/etc/strelka_config_bwa_default.ini config/strelka_config_bwa.ini
+
+Creating a folder called data 
+Add the BAM + BAM indexes, REF (FASTA) + indexes (fai) and the strelka_config_bwa.ini
+
+OUR DATA IS EXOME AND SO THE COVERAGE OF THE FILE IS DIFFERENT, WE NEED TO CHANGE THE isSkipDepthFilters parameter in the strelka_config_bwa.ini file. The default setting of isSkipDepthFilters = 0 must simply be changed to isSkipDepthFilters = 1, and we’ll accomplish this using the vim editor:
+
+$ vim /home/dekoterlab/bin/configureStrelkaWorkflow.pl
+
+also: add the full paths where BAM, REF and strelka_config_bwa.ini are located (there are fields that ask for it)
+
+In order to quit the editor while saving changes, press ESC, following by :x! and pressing enter. The reason why we do this is described on the Strelka FAQ page:
+
+The depth filter is designed to filter out all variants which are called above a multiple of the mean chromosome depth, the default configuration is set to filter variants with a depth greater than 3x the chromosomal mean. If you are using exome/targeted sequencing data, the depth filter should be turned off…
+
+However in whole exome sequencing data, the mean chromosomal depth will be extremely small, resulting in nearly all variants being (improperly) filtered out.
+
+If you were doing this for whole genome sequencing data, then you should leave this parameter set to 0 as the depth of coverage won’t be as high.
+
+A Strelka analysis is performed in 2 steps. In the first step we provide Strelka with all the information it requires to run the analysis, including the tumour and normal bam filenames, the config, and the reference genome. Strelka will create an output directory with the setup required to run the analysis.
+
+###sample 857
+
+$ configureStrelkaWorkflow.pl \
+    --tumor /home/dekoterlab/etc/data/Galaxy47-[Aligned_857_thymus].bam \
+    --normal /home/dekoterlab/etc/data/Galaxy257-[Aligned_857_tail].bam \
+    --ref /home/dekoterlab/etc/data/UCSC_mm10.fa \
+    --config /home/dekoterlab/etc/data/strelka_config_bwa.ini \
+    --output-dir results_857/strelka/
+
+$ make -C results_857/strelka/ -j 2
+
+The output directory will contain a makefile that can be used with the tool make.
+
+To run the Strelka analysis, use make and specify the directory constructed by configureStrelkaWorkflow.pl with make’s '-C' option.
+
+$ make -C results_853/strelka/ -j 2
+
+The -j 2 parameter specifies that we want to use 2 cores to run Strelka. Change this number to increase or decrease the parallelization of the job. The more cores the faster the job will be, but the higher the load on the machine that is running Strelka.
+
+$ less -s /home/dekoterlab/etc/test_data/results_857/strelka/results/passed.somatic.snvs.vcf
+
